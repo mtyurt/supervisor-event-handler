@@ -1,4 +1,4 @@
-package supervisorevent
+package eventhandler
 
 import (
 	"bufio"
