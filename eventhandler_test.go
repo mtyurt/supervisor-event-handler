@@ -49,7 +49,7 @@ func TestParseHeader(t *testing.T) {
 	}
 }
 
-func TestRegisterEventProcessor(t *testing.T) {
+func TestHandleEvent(t *testing.T) {
 	h := EventHandler{}
 	var tests = []struct {
 		expected error
@@ -75,9 +75,9 @@ func TestRegisterEventProcessor(t *testing.T) {
 	}
 	for _, tt := range tests {
 		tt := tt
-		actual := h.RegisterEventProcessor(tt.given.event, tt.given.handler)
+		actual := h.HandleEvent(tt.given.event, tt.given.handler)
 		if (actual != nil && tt.expected != nil) && actual.Error() != tt.expected.Error() {
-			t.Errorf("RegisterEventProcessor(%v): expected %s, actual %s", tt.given, tt.expected.Error(), actual)
+			t.Errorf("HandleEvent(%v): expected %s, actual %s", tt.given, tt.expected.Error(), actual)
 		}
 	}
 }
@@ -120,13 +120,13 @@ func TestReadHeaderAndPayload(t *testing.T) {
 func TestProcessEvent(t *testing.T) {
 	actual := ""
 	h := EventHandler{}
-	if err := h.RegisterEventProcessor("PROCESS_STATE", func(header HeaderTokens, payload map[string]string) {
+	if err := h.HandleEvent("PROCESS_STATE", func(header HeaderTokens, payload map[string]string) {
 		actual = header.EventName + payload["processname"]
 	}); err != nil {
 		t.Errorf(err.Error())
 	}
 
-	if err := h.RegisterEventProcessor("PROCESS_GROUP_ADDED", func(header HeaderTokens, payload map[string]string) {
+	if err := h.HandleEvent("PROCESS_GROUP_ADDED", func(header HeaderTokens, payload map[string]string) {
 		actual = header.EventName + payload["groupname"]
 	}); err != nil {
 		t.Errorf(err.Error())

@@ -55,7 +55,7 @@ var ValidEventNames = []string{
 }
 
 // EventHandler is the main service struct to this package.
-// It should be initialized with RegisterEventProcessor function and then started.
+// It should be initialized with HandleEvent function and then started.
 type EventHandler struct {
 	processors map[string]EventProcessor
 }
@@ -64,9 +64,9 @@ type EventHandler struct {
 // This should be provided by the client
 type EventProcessor func(HeaderTokens, map[string]string)
 
-// RegisterEventProcessor puts a new processor to the EventHandler, which will
+// HandleEvent puts a new processor to the EventHandler, which will
 // be used while processing supervisord events.
-func (h *EventHandler) RegisterEventProcessor(eventName string, processor EventProcessor) error {
+func (h *EventHandler) HandleEvent(eventName string, processor EventProcessor) error {
 	valid := false
 	for _, n := range ValidEventNames {
 		if n == eventName {
