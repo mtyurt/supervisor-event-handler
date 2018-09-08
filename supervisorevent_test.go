@@ -1,9 +1,13 @@
 package supervisorevent
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestParseHeader(t *testing.T) {
@@ -75,4 +79,38 @@ func TestRegisterEventProcessor(t *testing.T) {
 			t.Errorf("RegisterEventProcessor(%v): expected %s, actual %s", tt.given, tt.expected.Error(), actual)
 		}
 	}
+}
+
+type readResponse struct {
+	header  HeaderTokens
+	payload map[string]string
+	err     error
+}
+
+func TestReadHeaderAndPayload(t *testing.T) {
+	h := EventHandler{}
+
+	var tests = []struct {
+		expectedHeader readResponse
+		given          string
+	}{
+		{readResponse{
+			HeaderTokens{"3.0", "supervisor", "21", "listener", "10", "PROCESS_STATE_RUNNING", 58},
+			map[string]string{
+				"processname": "cat",
+				"groupname":   "cat",
+				"from_state":  "STARTING",
+				"pid":         "2766",
+			},
+			nil,
+		},
+			"ver:3.0 server:supervisor serial:21 pool:listener poolserial:10 eventname:PROCESS_STATE_RUNNING len:58\nprocessname:cat groupname:cat from_state:STARTING pid:2766"},
+	}
+	for _, tt := range tests {
+		header, payload, err := h.readHeaderAndPayload(bufio.NewReader(strings.NewReader(tt.given)))
+		if header != tt.expected.header || !cmp.Equal(payload, tt.expected.payload) || err != tt.expected.err {
+			t.Errorf("h.readHeaderAndPayload(%v): expected %v, actual %v", tt.given, tt.expected, readResponse{header, payload, err})
+		}
+	}
+
 }

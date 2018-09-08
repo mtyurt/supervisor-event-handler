@@ -1,11 +1,14 @@
 package supervisorevent
 
 import (
-	"errors"
+	"bufio"
 	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // Adopted from http://supervisord.org/events.html#header-tokens
@@ -71,6 +74,51 @@ func (h *EventHandler) RegisterEventProcessor(eventName string, processor EventP
 	}
 	h.processors[eventName] = processor
 	return nil
+}
+
+// Starts blocking event handling process
+// Should be called as last step
+func (h *EventHandler) Start() {
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		fmt.Println("READY")
+
+		header, dataMap, err := h.readHeaderAndPayload(reader)
+
+		if err != nil {
+			log.Printf("Processing event failed, probably not your fault, error: %s\n", err)
+		}
+		go h.processEvent(header, dataMap)
+
+		fmt.Print("RESULT 2\nOK")
+	}
+}
+
+// Reads header tokens and payload from reader
+// Returns parsed header tokens and payload
+func (h *EventHandler) readHeaderAndPayload(reader *bufio.Reader) (headerTokens HeaderTokens, payloadMap map[string]string, err error) {
+	headerLine, err := reader.ReadString('\n')
+	if err != nil {
+		err = errors.Wrap(err, "Reading header line failed")
+		return
+	}
+
+	headerTokens = h.parseHeaderTokens(headerLine)
+
+	payload := make([]byte, headerTokens.len)
+	_, err = reader.Read(payload)
+	if err != nil {
+		err = errors.Wrap(err, fmt.Sprintf("Reading payload line failed, Headers: %v\n", headerTokens))
+		return
+	}
+
+	payloadMap = h.parseTokensToMap(string(payload))
+
+	return
+}
+
+func (h *EventHandler) processEvent(header HeaderTokens, payload map[string]string) {
+
 }
 
 // Receives space separated {key}:{value} string pairs,
