@@ -118,7 +118,20 @@ func (h *EventHandler) readHeaderAndPayload(reader *bufio.Reader) (headerTokens 
 }
 
 func (h *EventHandler) processEvent(header HeaderTokens, payload map[string]string) {
+	processor, ok := h.processors[header.EventName]
+	if !ok {
+		// for generic event types like PROCESS_STATE
+		for event, p := range h.processors {
+			if strings.HasPrefix(header.EventName, event) {
+				processor = p
+			}
+		}
+	}
+	if processor == nil {
+		return
+	}
 
+	processor(header, payload)
 }
 
 // Receives space separated {key}:{value} string pairs,

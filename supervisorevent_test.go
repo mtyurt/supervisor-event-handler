@@ -91,8 +91,8 @@ func TestReadHeaderAndPayload(t *testing.T) {
 	h := EventHandler{}
 
 	var tests = []struct {
-		expectedHeader readResponse
-		given          string
+		expected readResponse
+		given    string
 	}{
 		{readResponse{
 			HeaderTokens{"3.0", "supervisor", "21", "listener", "10", "PROCESS_STATE_RUNNING", 58},
@@ -110,6 +110,47 @@ func TestReadHeaderAndPayload(t *testing.T) {
 		header, payload, err := h.readHeaderAndPayload(bufio.NewReader(strings.NewReader(tt.given)))
 		if header != tt.expected.header || !cmp.Equal(payload, tt.expected.payload) || err != tt.expected.err {
 			t.Errorf("h.readHeaderAndPayload(%v): expected %v, actual %v", tt.given, tt.expected, readResponse{header, payload, err})
+		}
+	}
+
+}
+
+func TestProcessEvent(t *testing.T) {
+	actual := ""
+	h := EventHandler{}
+	h.RegisterEventProcessor("PROCESS_STATE", func(header HeaderTokens, payload map[string]string) {
+		actual = header.EventName + payload["processname"]
+	})
+
+	h.RegisterEventProcessor("PROCESS_GROUP_ADDED", func(header HeaderTokens, payload map[string]string) {
+		actual = header.EventName + payload["groupname"]
+	})
+	var tests = []struct {
+		expected     string
+		givenHeader  HeaderTokens
+		givenPayload map[string]string
+	}{
+		{
+			"PROCESS_STATE_RUNNINGcat",
+			HeaderTokens{EventName: "PROCESS_STATE_RUNNING"},
+			map[string]string{"processname": "cat"},
+		},
+		{
+			"PROCESS_GROUP_ADDEDbat",
+			HeaderTokens{EventName: "PROCESS_GROUP_ADDED"},
+			map[string]string{"groupname": "bat"},
+		},
+		{
+			"",
+			HeaderTokens{EventName: "PROCESS_LOG_STDOUT"},
+			map[string]string{"data": "abc"},
+		},
+	}
+	for _, tt := range tests {
+		actual = ""
+		h.processEvent(tt.givenHeader, tt.givenPayload)
+		if actual != tt.expected {
+			t.Errorf("h.process(%v, %v): expected %s, actual %s", tt.givenHeader, tt.givenPayload, tt.expected, actual)
 		}
 	}
 
