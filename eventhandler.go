@@ -64,6 +64,11 @@ type EventHandler struct {
 // This should be provided by the client
 type EventProcessor func(HeaderTokens, map[string]string)
 
+// New creates, initalizes, and returns EventHandler
+func New() *EventHandler {
+	return &EventHandler{make(map[string]EventProcessor)}
+}
+
 // HandleEvent puts a new processor to the EventHandler, which will
 // be used while processing supervisord events.
 func (h *EventHandler) HandleEvent(eventName string, processor EventProcessor) error {
