@@ -1,8 +1,13 @@
 package supervisorevent
 
-import "testing"
+import (
+	"errors"
+	"fmt"
+	"testing"
+)
 
 func TestParseHeader(t *testing.T) {
+	h := EventHandler{}
 	var tests = []struct {
 		expected HeaderTokens
 		given    string
@@ -33,9 +38,41 @@ func TestParseHeader(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		actual := parseHeaderTokens(tt.given)
+		actual := h.parseHeaderTokens(tt.given)
 		if actual != tt.expected {
 			t.Errorf("parseHeaderTokens(%s): expected %v, actual %v", tt.given, tt.expected, actual)
+		}
+	}
+}
+
+func TestRegisterEventProcessor(t *testing.T) {
+	h := EventHandler{}
+	var tests = []struct {
+		expected error
+		given    struct {
+			event   string
+			handler EventProcessor
+		}
+	}{
+		{nil, struct {
+			event   string
+			handler EventProcessor
+		}{
+			"PROCESS_STATE",
+			nil,
+		}},
+		{errors.New(fmt.Sprintf("invalidevent is not a valid event! Valid events are: %v", VALID_EVENT_NAMES)), struct {
+			event   string
+			handler EventProcessor
+		}{
+			"invalidevent",
+			nil,
+		}},
+	}
+	for _, tt := range tests {
+		actual := h.RegisterEventProcessor(tt.given.event, tt.given.handler)
+		if (actual != nil && tt.expected != nil) && actual.Error() != tt.expected.Error() {
+			t.Errorf("RegisterEventProcessor(%v): expected %s, actual %s", tt.given, tt.expected.Error(), actual)
 		}
 	}
 }
