@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// HeaderTokens contains general information about the event and supervisor
 // Adopted from http://supervisord.org/events.html#header-tokens
 type HeaderTokens struct {
 	Ver        string
@@ -22,8 +23,9 @@ type HeaderTokens struct {
 	len        int
 }
 
+// ValidEventNames contains the events supported by supervisor.
 // Adopted from http://supervisord.org/events.html#event-types
-var VALID_EVENT_NAMES []string = []string{
+var ValidEventNames = []string{
 	"EVENT",
 	"PROCESS_STATE",
 	"PROCESS_STATE_STARTING",
@@ -52,21 +54,27 @@ var VALID_EVENT_NAMES []string = []string{
 	"PROCESS_GROUP_REMOVED",
 }
 
-type EventProcessor func(HeaderTokens, map[string]string)
-
+// EventHandler is the main service struct to this package.
+// It should be initialized with RegisterEventProcessor function and then started.
 type EventHandler struct {
 	processors map[string]EventProcessor
 }
 
+// EventProcessor defines the actual event processing function
+// This should be provided by the client
+type EventProcessor func(HeaderTokens, map[string]string)
+
+// RegisterEventProcessor puts a new processor to the EventHandler, which will
+// be used while processing supervisord events.
 func (h *EventHandler) RegisterEventProcessor(eventName string, processor EventProcessor) error {
 	valid := false
-	for _, n := range VALID_EVENT_NAMES {
+	for _, n := range ValidEventNames {
 		if n == eventName {
 			valid = true
 		}
 	}
 	if !valid {
-		return errors.New(fmt.Sprintf("%s is not a valid event! Valid events are: %v", eventName, VALID_EVENT_NAMES))
+		return fmt.Errorf("%s is not a valid event! Valid events are: %v", eventName, ValidEventNames)
 	}
 
 	if h.processors == nil {
@@ -76,7 +84,7 @@ func (h *EventHandler) RegisterEventProcessor(eventName string, processor EventP
 	return nil
 }
 
-// Starts blocking event handling process
+// Start is the blocking event handling function for EventHandler
 // Should be called as last step
 func (h *EventHandler) Start() {
 	reader := bufio.NewReader(os.Stdin)

@@ -2,7 +2,6 @@ package supervisorevent
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -65,7 +64,7 @@ func TestRegisterEventProcessor(t *testing.T) {
 			"PROCESS_STATE",
 			nil,
 		}},
-		{errors.New(fmt.Sprintf("invalidevent is not a valid event! Valid events are: %v", VALID_EVENT_NAMES)), struct {
+		{fmt.Errorf("invalidevent is not a valid event! Valid events are: %v", ValidEventNames), struct {
 			event   string
 			handler EventProcessor
 		}{
@@ -118,13 +117,17 @@ func TestReadHeaderAndPayload(t *testing.T) {
 func TestProcessEvent(t *testing.T) {
 	actual := ""
 	h := EventHandler{}
-	h.RegisterEventProcessor("PROCESS_STATE", func(header HeaderTokens, payload map[string]string) {
+	if err := h.RegisterEventProcessor("PROCESS_STATE", func(header HeaderTokens, payload map[string]string) {
 		actual = header.EventName + payload["processname"]
-	})
+	}); err != nil {
+		t.Errorf(err.Error())
+	}
 
-	h.RegisterEventProcessor("PROCESS_GROUP_ADDED", func(header HeaderTokens, payload map[string]string) {
+	if err := h.RegisterEventProcessor("PROCESS_GROUP_ADDED", func(header HeaderTokens, payload map[string]string) {
 		actual = header.EventName + payload["groupname"]
-	})
+	}); err != nil {
+		t.Errorf(err.Error())
+	}
 	var tests = []struct {
 		expected     string
 		givenHeader  HeaderTokens
