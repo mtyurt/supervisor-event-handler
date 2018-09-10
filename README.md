@@ -30,12 +30,10 @@ import (
 )
 
 func main() {
-	handler := eventhandler.EventHandler{}
+	handler := eventhandler.New()
 
 	handler.HandleEvent("PROCESS_STATE", func(header eventhandler.HeaderTokens, payload map[string]string) {
-
 		fmt.Fprintf(os.Stderr, "event: %s, payload: %v\n", header.EventName, payload)
-
 	})
 	handler.Start()
 }
