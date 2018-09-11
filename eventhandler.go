@@ -149,14 +149,17 @@ func (h *EventHandler) processEvent(header HeaderTokens, payload map[string]stri
 
 // Receives space separated {key}:{value} string pairs,
 // creates a map where key -> value
-func (h *EventHandler) parseTokensToMap(tokens string) map[string]string {
-	tokenMap := make(map[string]string)
+func (h *EventHandler) parseTokensToMap(tokens string) (tokenMap map[string]string) {
+	tokenMap = make(map[string]string)
+	if len(strings.TrimSpace(tokens)) == 0 {
+		return
+	}
 	tokenList := strings.Split(strings.TrimSpace(tokens), " ")
 	for _, entry := range tokenList {
 		splited := strings.Split(entry, ":")
 		tokenMap[splited[0]] = splited[1]
 	}
-	return tokenMap
+	return
 }
 
 // Parses given header string, extracts values & returns HeaderTokens
