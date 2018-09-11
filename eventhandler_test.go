@@ -156,33 +156,40 @@ func TestProcessEvent(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 	var tests = []struct {
+		name         string
 		expected     string
 		givenHeader  HeaderTokens
 		givenPayload map[string]string
 	}{
 		{
+			"parent_event",
 			"PROCESS_STATE_RUNNINGcat",
 			HeaderTokens{EventName: "PROCESS_STATE_RUNNING"},
 			map[string]string{"processname": "cat"},
 		},
 		{
+			"exact_event",
 			"PROCESS_GROUP_ADDEDbat",
 			HeaderTokens{EventName: "PROCESS_GROUP_ADDED"},
 			map[string]string{"groupname": "bat"},
 		},
 		{
+			"not_registered_event",
 			"",
 			HeaderTokens{EventName: "PROCESS_LOG_STDOUT"},
 			map[string]string{"data": "abc"},
 		},
 	}
+
 	for _, tt := range tests {
 		tt := tt
-		actual = ""
-		h.processEvent(tt.givenHeader, tt.givenPayload)
-		if actual != tt.expected {
-			t.Errorf("h.process(%v, %v): expected %s, actual %s", tt.givenHeader, tt.givenPayload, tt.expected, actual)
-		}
-	}
+		t.Run(tt.name, func(t *testing.T) {
+			actual = ""
+			h.processEvent(tt.givenHeader, tt.givenPayload)
+			if actual != tt.expected {
+				t.Errorf("h.processEvent(%v, %v): expected %s, actual %s", tt.givenHeader, tt.givenPayload, tt.expected, actual)
+			}
 
+		})
+	}
 }
